@@ -232,8 +232,39 @@ public class EthRestController {
                 }
 
             }
+            //当前矿机情况
             response = ethService.accounts(channel,account);
             Map<String,Object> result = JasonUtil.jsonToMap(response);
+            
+            //24小时内的离线矿机情况
+            response = ethService.historyStats(channel);
+            Map<String,Object> resultSub = JasonUtil.jsonToMap(response);
+            for (Map.Entry entity:resultSub.entrySet())
+            {
+                Map<String,Object> map_= JasonUtil.jsonToMap(String.valueOf(entity.getValue()));
+                Object objAccount= map_.get("workers");
+                if (null!=objAccount && objAccount instanceof Map)
+                {
+                    Map<String,Object> workersMap= (Map<String, Object>) objAccount;
+                    for (Map.Entry entry_:workersMap.entrySet()){
+                        Object workersStatsMap = entry_.getValue();
+                        if(null!=workersStatsMap && workersStatsMap instanceof  Map)
+                        {
+                            Object offline = ((Map)workersStatsMap).get("offline");
+                            //该矿机是否在线
+                            if(String.valueOf(offline).equals("true"))
+                            {
+                                Object workers= result.get("workers");
+                                if (null!=workers && workers instanceof Map)
+                                {
+                                    ((Map) workers).put(entry_.getKey(),entry_.getValue());
+                                }
+
+                            }
+                        }
+                    }
+                }
+            }
             invocationResult = new InvocationResult(true, result);
         } catch (Exception e) {
             if (e instanceof ErrorException) {
