@@ -15,6 +15,7 @@ import org.apache.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
+import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
@@ -235,36 +236,10 @@ public class EthRestController {
             //当前矿机情况
             response = ethService.accounts(channel,account);
             Map<String,Object> result = JasonUtil.jsonToMap(response);
-            
             //24小时内的离线矿机情况
-            response = ethService.historyAccounts(channel,account.toLowerCase());
-            Map<String,Object> resultSub = JasonUtil.jsonToMap(response);
-            for (Map.Entry entity:resultSub.entrySet())
-            {
-                Map<String,Object> map_= JasonUtil.jsonToMap(String.valueOf(entity.getValue()));
-                Object objAccount= map_.get("workers");
-                if (null!=objAccount && objAccount instanceof Map)
-                {
-                    Map<String,Object> workersMap= (Map<String, Object>) objAccount;
-                    for (Map.Entry entry_:workersMap.entrySet()){
-                        Object workersStatsMap = entry_.getValue();
-                        if(null!=workersStatsMap && workersStatsMap instanceof  Map)
-                        {
-                            Object offline = ((Map)workersStatsMap).get("offline");
-                            //该矿机是否在线
-                            if(String.valueOf(offline).equals("true"))
-                            {
-                                Object workers= result.get("workers");
-                                if (null!=workers && workers instanceof Map && !((Map) workers).containsKey(entry_.getKey()))
-                                {
-                                    ((Map) workers).put(entry_.getKey(),entry_.getValue());
-                                }
-
-                            }
-                        }
-                    }
-                }
-            }
+            putOfflineWork(channel, account, result);
+            
+            
             invocationResult = new InvocationResult(true, result);
         } catch (Exception e) {
             if (e instanceof ErrorException) {
@@ -279,7 +254,46 @@ public class EthRestController {
         return invocationResult;
     }
 
+ /**
+     * 24小时内的离线矿机情况
+     *
+     * @param channel
+     * @param account
+     * @param result
+     * @throws IOException
+     */
+    private void putOfflineWork(String channel, String account, Map<String, Object> result) throws IOException {
+        String response = ethService.historyAccounts(channel,account.toLowerCase());
+        Map<String,Object> resultSub = JasonUtil.jsonToMap(response);
+        for (Map.Entry entity:resultSub.entrySet())
+        {
+            Map<String,Object> map_= JasonUtil.jsonToMap(String.valueOf(entity.getValue()));
+            Object objAccount= map_.get("workers");
+            if (null!=objAccount && objAccount instanceof Map)
+            {
+                Map<String,Object> workersMap= (Map<String, Object>) objAccount;
+                for (Map.Entry entry_:workersMap.entrySet()){
+                    Object workersStatsMap = entry_.getValue();
+                    if(null!=workersStatsMap && workersStatsMap instanceof  Map)
+                    {
+                        Object offline = ((Map)workersStatsMap).get("offline");
+                        //该矿机是否在线
+                        if(String.valueOf(offline).equals("true"))
+                        {
+                            Object workers= result.get("workers");
+                            if (null!=workers && workers instanceof Map && !((Map) workers).containsKey(entry_.getKey()))
+                            {
+                                ((Map) workers).put(entry_.getKey(),entry_.getValue());
+                            }
 
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    
     /**
      * 矿池24H状态信息
      *
@@ -379,6 +393,64 @@ public class EthRestController {
         return invocationResult;
     }
 
+
+    
+ /**
+     * 查询当前所有离线的矿机(性能影响)
+     *
+     * @param
+     * @return
+     */
+    @ApiOperation(value = "OFFLINEWORKS")
+    @RequestMapping(value ="/{client}/{channel}/offlineWorks", method = {RequestMethod.GET,RequestMethod.OPTIONS})
+    public InvocationResult offlineWorks(@PathVariable String client,@PathVariable String channel){
+        logger.info("method offlineWorks start!,");
+        String response = "";
+        InvocationResult invocationResult = null;
+        try {
+            if (StringUtil.isBlank(client) || StringUtil.isBlank(channel)) {
+                throw new ErrorException("error.eth.parameter");
+            }
+            String minersData = ethService.miners(channel);
+
+            Map<String,Object> map = JasonUtil.jsonToMap(minersData);
+            Object obj = map.get("miners");
+            String account = "";
+            Map<String,Object> result = null;
+            if (null!=obj && obj instanceof Map) {
+                for (Map.Entry entry:((Map<String, Object>) obj).entrySet()) {
+                    //矿工帐号（钱包地址）
+                    account = String.valueOf(entry.getKey());
+                    //当前矿机情况
+                    response = ethService.accounts(channel,account);
+                    result = JasonUtil.jsonToMap(response);
+                    //24小时内的离线矿机情况
+                    putOfflineWork(channel, account, result);
+
+                    entry.setValue(result);
+                }
+            }
+            invocationResult = new InvocationResult(true, map);
+        } catch (Exception e) {
+            if (e instanceof ErrorException) {
+                invocationResult = new InvocationResult(false, ((ErrorException) e).getErrcode(), ((ErrorException) e).getErrm(), "");
+            } else {
+                ErrorException ex = new ErrorException(Constansts.NO_DEFINE_ERROR_CODE);
+                invocationResult = new InvocationResult(false, ex.getErrcode(), ex.getErrm(), "");
+                logger.error("method offlineWorks  exception!", e);
+            }
+
+        }
+        logger.info("method offlineWorks end!");
+        return invocationResult;
+    }
+
+    
+    
+     public static void main(String[] args) {
+
+        System.out.println("0x986740E6F26f78B3f04C998632D92e23E404C5A2".toLowerCase());
+    }
 
 
 
