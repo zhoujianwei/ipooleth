@@ -237,7 +237,7 @@ public class EthRestController {
             Map<String,Object> result = JasonUtil.jsonToMap(response);
             
             //24小时内的离线矿机情况
-            response = ethService.historyStats(channel);
+            response = ethService.historyAccounts(channel,account.toLowerCase());
             Map<String,Object> resultSub = JasonUtil.jsonToMap(response);
             for (Map.Entry entity:resultSub.entrySet())
             {
