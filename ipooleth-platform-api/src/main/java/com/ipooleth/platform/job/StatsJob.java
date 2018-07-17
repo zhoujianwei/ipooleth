@@ -42,8 +42,8 @@ public class StatsJob {
         String channel = "ETH";
         String statsData = ethService.stats(channel);
         String hkey = channel+ StringUtil.SIGN_COLON+ MinePoolApi.KEY.STATS;
-        String date1 =  DateUtil.format(new Date(),"yyyy-MM-dd HH:00:00");
-        String date2 =  DateUtil.format(DateUtil.addDate(new Date(),-1),"yyyy-MM-dd HH:00:00");
+        String date1 =  DateUtil.format(new Date(),"yyyy-MM-dd HH:mm:00");
+        String date2 =  DateUtil.format(DateUtil.addDate(new Date(),-1),"yyyy-MM-dd HH:mm:00");
         //ETH:STATS,2017-09-10 20:00:00,data
         redisTemplate.opsForHash().put(hkey, date1,statsData);
         logger.debug("handleProcessor put hkey:"+hkey+" key:"+date1+" value:"+statsData);
