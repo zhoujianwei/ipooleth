@@ -357,7 +357,7 @@ public class EthRestController {
                     throw new ErrorException("error.eth.parameter");
                 }
             }
-            response = ethService.historyAccounts(channel,account);
+            response = ethService.historyAccounts(channel,account.toLowerCase());
             Map<String,Object> result = JasonUtil.jsonToMap(response);
             for (Map.Entry entity:result.entrySet())
             {
