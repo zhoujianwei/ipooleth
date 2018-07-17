@@ -255,7 +255,7 @@ public class EthRestController {
                             if(String.valueOf(offline).equals("true"))
                             {
                                 Object workers= result.get("workers");
-                                if (null!=workers && workers instanceof Map)
+                                if (null!=workers && workers instanceof Map && !((Map) workers).containsKey(entry_.getKey()))
                                 {
                                     ((Map) workers).put(entry_.getKey(),entry_.getValue());
                                 }
